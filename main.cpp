@@ -7,6 +7,7 @@
 #include <random>
 #include <string>
 #include <sstream>
+#include <vector>
 
 // lambda to calculate squared values
 auto sq = [](auto const a) { return a * a; };
@@ -36,6 +37,40 @@ auto Rate(T val, int nPrev, int nNext)
     // to higher energy level
     else
         return std::exp(-exponent);
+}
+
+// estimation of relaxation time --> first zero value in position
+template <typename T1, typename T2>
+auto tauEstimate(std::vector<T1> time, std::vector<T2> position)
+{
+    // check if we are already in 0
+    if (position[0] == 0)
+    {
+        std::cout << "Simulation started at 0." << std::endl;
+        return 0;
+    }
+
+    // check for errors
+    if (position.size() != time.size())
+    {
+        std::cout << "ERROR: Container sizes do not match." << std::endl;
+        std::exit(-1);
+    }
+
+    // determine relaxation time
+    int tau{0};
+    for (int i{1}; i < static_cast<int>(time.size()); i++)
+    {
+        if (position[i] == 0)
+        {
+            tau = time[i];
+            return tau;
+        }
+    }
+
+    // if nothing happens give error message
+    std::cout << "ERROR: Relaxation time cannot be estimated.\nConsider rerunning the simulation." << std::endl;
+    std::exit(-1);
 }
 
 // main function
@@ -72,12 +107,21 @@ int main(int argc, char **argv)
     // write to file
     std::ofstream data;
     data.open(fileName);
-    data << "time " << "state" << std::endl;
+    data << "time "
+         << "state" << std::endl;
+
+    // containers for further analysis
+    // store time
+    std::vector<int> time(N, 0);
+    // store position
+    std::vector<int> position(N, 0);
 
     // simulation
     // inital state
     int nPrev{nInit};
-    for (int t{0}; t < N; t++)
+    // initial values to containers
+    position[0] = nPrev;
+    for (int t{1}; t < N; t++)
     {
         // next state
         int nNext{0};
@@ -95,5 +139,13 @@ int main(int argc, char **argv)
 
         // write step data to file
         data << t << " " << nPrev << std::endl;
+
+        // update conatiners
+        time[t] = t, position[t] = nPrev;
     }
+
+    // estimate relaxation time
+    int tau = tauEstimate(time, position);
+    
+    
 }
