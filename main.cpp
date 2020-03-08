@@ -12,17 +12,17 @@
 auto sq = [](auto const a) { return a * a; };
 
 // choose direction (left or right)
-bool Direction(std::mt19937 gen)
+auto Direction(std::mt19937 gen)
 {
     // uniform distribution in closed interval [0,1]
-    std::uniform_int_distribution<> distr(0, 1);
+    std::uniform_real_distribution<> distr(0, 1);
     return distr(gen);
 }
 
 // generate real random numbers in closed interval [0,1]
 auto UniformRand(std::mt19937 gen)
 {
-    std::uniform_real_distribution<double> distr(0, 1);
+    std::uniform_real_distribution<> distr(0., 1.);
     return distr(gen);
 }
 
@@ -42,19 +42,15 @@ auto BetaDeltaE(T val, int nPrev, int nNext)
 
 // calculate rate
 template <typename T>
-auto Rate(T val, int nPrev, int nNext, std::mt19937 gen)
+auto Rate(T val, int nPrev, int nNext)
 {
     auto exponent = BetaDeltaE(val, nPrev, nNext);
     // to lower energy level
     if (exponent < 0)
         return 1.;
-
     // to higher energy level
-    auto randVal = UniformRand(gen);
-    if (exponent > randVal)
-        return 1.;
     else
-        return 0.;
+        return std::exp(-exponent);
 }
 
 // main function
@@ -85,6 +81,8 @@ int main(int argc, char **argv)
     // random number generation
     std::random_device rd{};
     std::mt19937 gen(rd());
+    std::uniform_int_distribution<> distrInt(0, 1);
+    std::uniform_real_distribution<> distrReal(0., 1.);
 
     // simulation
     // inital state
@@ -94,14 +92,16 @@ int main(int argc, char **argv)
         // next state
         int nNext{0};
         // choose left or rigth direction
-        if (Direction(gen))
+        if (distrInt(gen))
             nNext = nPrev + 1;
         else
             nNext = nPrev - 1;
 
         // calculate rate in chosen direction
-        double rate = Rate(crucial, nPrev, nNext, gen);
-        if (rate)
+        double rate = Rate(crucial, nPrev, nNext);
+        if (rate > distrReal(gen))
             nPrev = nNext;
     }
+
+    std::cout << nPrev << std::endl;
 }
