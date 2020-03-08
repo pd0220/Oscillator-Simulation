@@ -136,7 +136,7 @@ auto Variance(std::vector<T1> averages, T2 estimator)
 int main(int argc, char **argv)
 {
     // setup
-    if (argc < 6)
+    if (argc < 5)
     {
         std::cout << "ERROR: not enough argument." << std::endl;
         std::exit(-1);
