@@ -5,51 +5,100 @@
 #include <math.h>
 #include <numeric>
 #include <random>
+#include <string>
+#include <sstream>
 
 // lambda to calculate squared values
 auto sq = [](auto const a) { return a * a; };
+
+// choose direction (left or right)
+bool Direction(std::mt19937 gen)
+{
+    // uniform distribution in closed interval [0,1]
+    std::uniform_int_distribution<> distr(0, 1);
+    return distr(gen);
+}
+
+// generate real random numbers in closed interval [0,1]
+auto UniformRand(std::mt19937 gen)
+{
+    std::uniform_real_distribution<double> distr(0, 1);
+    return distr(gen);
+}
 
 // calculate beta * delta energy
 // val --> beta * k * a^2
 template <typename T>
 auto BetaDeltaE(T val, int nPrev, int nNext)
 {
+    if (nPrev == nNext)
+    {
+        std::cout << "ERROR: wrong numbers are given" << std::endl;
+        std::exit(-1);
+    }
     using R = decltype(val * nPrev);
     return (R)0.5 * val * (sq(nNext) - sq(nPrev));
 }
 
 // calculate rate
 template <typename T>
-auto Rate(T val, int nPrev, int nNext)
+auto Rate(T val, int nPrev, int nNext, std::mt19937 gen)
 {
     auto exponent = BetaDeltaE(val, nPrev, nNext);
-    // to lesser energy level
+    // to lower energy level
     if (exponent < 0)
-        return 1;
-    // to higher energy level
-    else if (exponent > 0)
-        return std::exp(-exponent);
-    // error
-    else
-    {
-        std::cout << "ERROR\nWrong state numbers are given." << std::endl;
-        std::exit(-1);
-    }
-}
+        return 1.;
 
-// choose direction (left or right)
-bool Direction()
-{
-    std::random_device rd{};
-    std::mt19937 gen(rd());
-    // uniform distribution in closed interval [0,1]
-    std::uniform_int_distribution<> distr(0, 1);
-    return distr(gen);
+    // to higher energy level
+    auto randVal = UniformRand(gen);
+    if (exponent > randVal)
+        return 1.;
+    else
+        return 0.;
 }
 
 // main function
-int main(int, char **)
+// first argument: number of steps in the simulation
+// second argument: inital state
+// third argument: given beta * k * a^2 (crucial --> defines the system parameters)
+int main(int argc, char **argv)
 {
+    // setup
+    if (argc < 4)
+    {
+        std::cout << "ERROR: not enough argument." << std::endl;
+        std::exit(-1);
+    }
+    // read arguments
+    std::string NArg = argv[1], nArg = argv[2], crucialArg = argv[3];
+    std::stringstream NStream(NArg), nStream(nArg), crucialStream(crucialArg);
+    // define system variables
+    int N{0}, nInit{0}, crucial{0};
+    // first argument
+    NStream >> N;
+    // second argument
+    nStream >> nInit;
+    // third argument
+    crucialStream >> crucial;
 
-    std::cout << Direction() << std::endl;
+    // random number generation
+    std::random_device rd{};
+    std::mt19937 gen(rd());
+
+    // simulation
+    // inital state
+    int nPrev{nInit};
+    for (int t{0}; t < N; t++)
+    {
+        // next state
+        int nNext{0};
+        // choose left or rigth direction
+        if (Direction(gen))
+            nNext = nPrev + 1;
+        else
+            nNext = nPrev - 1;
+        // calculate rate in chosen direction
+        double rate = Rate(crucial, nPrev, nNext, gen);
+
+    }
 }
