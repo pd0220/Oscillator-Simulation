@@ -97,8 +97,10 @@ int main(int argc, char **argv)
             nNext = nPrev + 1;
         else
             nNext = nPrev - 1;
+
         // calculate rate in chosen direction
         double rate = Rate(crucial, nPrev, nNext, gen);
-
+        if (rate)
+            nPrev = nNext;
     }
 }
