@@ -103,12 +103,36 @@ auto MeanSq(std::vector<T> const &vec)
 
 // ------------------------------------------------------------------------------------------------------------------------------------------
 
+// calculate square of every element in a vector
+template <typename T>
+auto vecSq(std::vector<T> vec)
+{
+    int size = static_cast<int>(vec.size());
+    std::vector<T> vecSq(size, 0.);
+    for (int i{0}; i < size; i++)
+    {
+        vecSq[i] = sq(vec[i]);
+    }
+    return vecSq;
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------------
+
+// estimate error
+template <typename T1, typename T2>
+auto Variance(std::vector<T1> averages, T2 estimator)
+{
+    using R = decltype(averages[0] + estimator);
+    // calculation
+    auto add_square = [estimator](R sum, R i) {auto d = i - estimator; return sum + d * d; };
+    return std::accumulate(averages.begin(), averages.end(), 0.0, add_square) / static_cast<int>(averages.size());
+}
+
 // main function
 // first argument: number of steps in the simulation
 // second argument: inital state
 // third argument: given beta * k * a^2 (crucial --> defines the system parameters)
 // fourth argument: file name to save raw data
-// fifth argument: number of chunks to analyize
 int main(int argc, char **argv)
 {
     // setup
@@ -119,10 +143,10 @@ int main(int argc, char **argv)
     }
 
     // read arguments
-    std::string NArg = argv[1], nArg = argv[2], crucialArg = argv[3], fileName = argv[4], chunksArg = argv[5];
-    std::stringstream NStream(NArg), nStream(nArg), crucialStream(crucialArg), chunksStream(chunksArg);
+    std::string NArg = argv[1], nArg = argv[2], crucialArg = argv[3], fileName = argv[4];
+    std::stringstream NStream(NArg), nStream(nArg), crucialStream(crucialArg);
     // define system variables
-    int N{0}, nInit{0}, chunks{0};
+    int N{0}, nInit{0};
     double crucial{0};
     // first argument
     NStream >> N;
@@ -130,10 +154,8 @@ int main(int argc, char **argv)
     nStream >> nInit;
     // third argument
     crucialStream >> crucial;
-    // fifth argument
-    chunksStream >> chunks;
 
-// ------------------------------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------------------------------
 
     // random number generation
     std::random_device rd{};
@@ -141,7 +163,7 @@ int main(int argc, char **argv)
     std::uniform_int_distribution<> distrInt(0, 1);
     std::uniform_real_distribution<> distrReal(0., 1.);
 
-// ------------------------------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------------------------------
 
     // write to file
     std::ofstream data;
@@ -149,7 +171,7 @@ int main(int argc, char **argv)
     data << "time "
          << "state" << std::endl;
 
-// ------------------------------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------------------------------
 
     // containers for further analysis
     // store time
@@ -157,7 +179,7 @@ int main(int argc, char **argv)
     // store position
     std::vector<int> position(N, 0);
 
-// ------------------------------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------------------------------
 
     // simulation
     // inital state
@@ -189,7 +211,7 @@ int main(int argc, char **argv)
 
     data.close();
 
-// ------------------------------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------------------------------
 
     // estimate relaxation time
     int tau = tauEstimate(time, position);
@@ -198,49 +220,13 @@ int main(int argc, char **argv)
     time.erase(time.begin(), time.begin() + tau);
     position.erase(position.begin(), position.begin() + tau);
 
-    // new size of containers (in equilibrium)
-    int N_eq = static_cast<int>(position.size());
+    // ------------------------------------------------------------------------------------------------------------------------------------------
 
-// ------------------------------------------------------------------------------------------------------------------------------------------
+    // calulate thermodynamic averages
+    double estimator_x = Mean(position), estimator_xSq = MeanSq(position);
+    // estimate errors
+    double sigma_x = std::sqrt(Variance(position, estimator_x)), sigma_xSq = std::sqrt(Variance(vecSq(position), estimator_xSq));
 
-    // split to chunks and calculate averages (like jackknife method)
-    double numOfValsInChunk = std::floor(N_eq / chunks);
-
-    // containers for thermodynamic averages
-    std::vector<double> means(chunks, 0.0);
-    std::vector<double> meanSqs(chunks, 0.0);
-
-// ------------------------------------------------------------------------------------------------------------------------------------------
-
-    // calculate averages for chunks
-    for (int i{0}; i < chunks - 1; i++)
-    {
-        // temporary vector to calculate averages
-        std::vector<int> tmp(numOfValsInChunk, 0);
-        for (int j{0}; j < numOfValsInChunk; j++)
-        {
-            tmp[j] = position[i * numOfValsInChunk + j];
-        }
-
-        // calculate averages
-        means[i] = Mean(tmp);
-        meanSqs[i] = MeanSq(tmp);
-
-        std::cout << means[i] << " " << meanSqs[i] << std::endl;
-    }
-
-    // last chunk might be longer
-    double valsInLastChunk = N_eq - (chunks - 1) * numOfValsInChunk;
-    std::vector<int> tmp(valsInLastChunk, 0);
-    for (int j{0}; j < valsInLastChunk; j++)
-    {
-        tmp[j] = position[(chunks - 1) * numOfValsInChunk + j];
-    }
-
-    means[chunks - 1] = Mean(tmp);
-    meanSqs[chunks - 1] = MeanSq(tmp);
-
-    std::cout << means[chunks - 1] << " " << meanSqs[chunks - 1] << std::endl;
-
-// ------------------------------------------------------------------------------------------------------------------------------------------
+    std::cout << "E(x): " << estimator_x << " +/- " << sigma_x << std::endl;
+    std::cout << "E(x^2): " << estimator_xSq << " +/- " << sigma_xSq << std::endl;
 }
