@@ -73,7 +73,8 @@ int main(int argc, char **argv)
     std::string NArg = argv[1], nArg = argv[2], crucialArg = argv[3];
     std::stringstream NStream(NArg), nStream(nArg), crucialStream(crucialArg);
     // define system variables
-    int N{0}, nInit{0}, crucial{0};
+    int N{0}, nInit{0};
+    double crucial{0};
     // first argument
     NStream >> N;
     // second argument
