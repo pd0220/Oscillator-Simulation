@@ -2,8 +2,8 @@
 
 // including used headers and libraries
 #include <iostream>
+#include <fstream>
 #include <math.h>
-#include <numeric>
 #include <random>
 #include <string>
 #include <sstream>
@@ -45,13 +45,13 @@ auto Rate(T val, int nPrev, int nNext)
 int main(int argc, char **argv)
 {
     // setup
-    if (argc < 4)
+    if (argc < 5)
     {
         std::cout << "ERROR: not enough argument." << std::endl;
         std::exit(-1);
     }
     // read arguments
-    std::string NArg = argv[1], nArg = argv[2], crucialArg = argv[3];
+    std::string NArg = argv[1], nArg = argv[2], crucialArg = argv[3], fileName = argv[4];
     std::stringstream NStream(NArg), nStream(nArg), crucialStream(crucialArg);
     // define system variables
     int N{0}, nInit{0};
@@ -68,6 +68,11 @@ int main(int argc, char **argv)
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> distrInt(0, 1);
     std::uniform_real_distribution<> distrReal(0., 1.);
+
+    // write to file
+    std::ofstream data;
+    data.open(fileName);
+    data << "time " << "state" << std::endl;
 
     // simulation
     // inital state
@@ -87,5 +92,8 @@ int main(int argc, char **argv)
         // decide to make transition or stay in place
         if (rate > distrReal(gen))
             nPrev = nNext;
+
+        // write step data to file
+        data << t << " " << nPrev << std::endl;
     }
 }
