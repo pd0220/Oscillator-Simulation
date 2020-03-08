@@ -50,6 +50,6 @@ bool Direction()
 // main function
 int main(int, char **)
 {
-    
+
     std::cout << Direction() << std::endl;
 }
