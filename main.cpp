@@ -133,17 +133,18 @@ auto Variance(std::vector<T1> averages, T2 estimator)
 // second argument: inital state
 // third argument: given beta * k * a^2 (crucial --> defines the system parameters)
 // fourth argument: file name to save raw data
+// fifth argument: file name to save equilibrium data
 int main(int argc, char **argv)
 {
     // setup
-    if (argc < 5)
+    if (argc < 6)
     {
         std::cout << "ERROR: not enough argument." << std::endl;
         std::exit(-1);
     }
 
     // read arguments
-    std::string NArg = argv[1], nArg = argv[2], crucialArg = argv[3], fileName = argv[4];
+    std::string NArg = argv[1], nArg = argv[2], crucialArg = argv[3], fileName1 = argv[4], fileName2 = argv[5];
     std::stringstream NStream(NArg), nStream(nArg), crucialStream(crucialArg);
     // define system variables
     int N{0}, nInit{0};
@@ -167,7 +168,7 @@ int main(int argc, char **argv)
 
     // write to file
     std::ofstream data;
-    data.open(fileName);
+    data.open(fileName1);
     data << "time "
          << "state" << std::endl;
 
@@ -219,6 +220,17 @@ int main(int argc, char **argv)
     // delete dynamics from containers during relaxation time
     time.erase(time.begin(), time.begin() + tau);
     position.erase(position.begin(), position.begin() + tau);
+
+    // write to file again (equilibrium)
+    data.open(fileName2);
+
+    for (int i{0}; i < static_cast<int>(position.size()); i++)
+    {
+        data << time[i] << " " << position[i] << std::endl;
+    }
+
+    data.close();
+
 
     // ------------------------------------------------------------------------------------------------------------------------------------------
 
