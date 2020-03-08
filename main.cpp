@@ -11,21 +11,6 @@
 // lambda to calculate squared values
 auto sq = [](auto const a) { return a * a; };
 
-// choose direction (left or right)
-auto Direction(std::mt19937 gen)
-{
-    // uniform distribution in closed interval [0,1]
-    std::uniform_real_distribution<> distr(0, 1);
-    return distr(gen);
-}
-
-// generate real random numbers in closed interval [0,1]
-auto UniformRand(std::mt19937 gen)
-{
-    std::uniform_real_distribution<> distr(0., 1.);
-    return distr(gen);
-}
-
 // calculate beta * delta energy
 // val --> beta * k * a^2
 template <typename T>
@@ -99,9 +84,8 @@ int main(int argc, char **argv)
 
         // calculate rate in chosen direction
         double rate = Rate(crucial, nPrev, nNext);
+        // decide to make transition or stay in place
         if (rate > distrReal(gen))
             nPrev = nNext;
     }
-
-    std::cout << nPrev << std::endl;
 }
