@@ -166,19 +166,19 @@ int main(int argc, char **argv)
 
     // ------------------------------------------------------------------------------------------------------------------------------------------
 
-    // write to file
-    std::ofstream data;
-    data.open(fileName1);
-    data << "time "
-         << "state" << std::endl;
-
-    // ------------------------------------------------------------------------------------------------------------------------------------------
-
     // containers for further analysis
     // store time
     std::vector<int> time(N, 0);
     // store position
     std::vector<int> position(N, 0);
+
+    // ------------------------------------------------------------------------------------------------------------------------------------------
+
+    // write to file
+    std::ofstream data;
+    data.open(fileName1);
+    data << "time "
+         << "state" << std::endl;
 
     // ------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -209,7 +209,6 @@ int main(int argc, char **argv)
         // update conatiners
         time[t] = t, position[t] = nPrev;
     }
-
     data.close();
 
     // ------------------------------------------------------------------------------------------------------------------------------------------
@@ -217,27 +216,28 @@ int main(int argc, char **argv)
     // estimate relaxation time
     int tau = tauEstimate(time, position);
 
-    // delete dynamics from containers during relaxation time
-    time.erase(time.begin(), time.begin() + tau);
-    position.erase(position.begin(), position.begin() + tau);
-
     // write to file again (equilibrium)
-    data.open(fileName2);
+    // using tau as a sample frequency to get independent data
+    // container for sampled data
+    std::vector<int> positionSampled(std::floor(N / tau), 0);
 
-    for (int i{0}; i < static_cast<int>(position.size()); i++)
+    data.open(fileName2);
+    for (int i{tau}; i <= static_cast<int>(positionSampled.size()) * tau; i += tau)
     {
         data << time[i] << " " << position[i] << std::endl;
+        // update container
+        positionSampled[(int)(i - tau) / tau] = position[i];
     }
-
     data.close();
 
     // ------------------------------------------------------------------------------------------------------------------------------------------
 
     // calulate thermodynamic averages
-    double estimator_x = Mean(position), estimator_xSq = MeanSq(position);
+    double estimator_x = Mean(positionSampled), estimator_xSq = MeanSq(positionSampled);
     // estimate errors
-    double sigma_x = std::sqrt(Variance(position, estimator_x)), sigma_xSq = std::sqrt(Variance(vecSq(position), estimator_xSq));
+    double sigma_x = std::sqrt(Variance(positionSampled, estimator_x)), sigma_xSq = std::sqrt(Variance(vecSq(positionSampled), estimator_xSq));
 
+    // write results to screen
     std::cout << "E(x): " << estimator_x << " +/- " << sigma_x << std::endl;
     std::cout << "E(x^2): " << estimator_xSq << " +/- " << sigma_xSq << std::endl;
 }
