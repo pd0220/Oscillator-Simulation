@@ -105,7 +105,7 @@ auto MeanSq(std::vector<T> const &vec)
 
 // calculate square of every element in a vector
 template <typename T>
-auto vecSq(std::vector<T> vec)
+auto vecSq(std::vector<T> const &vec)
 {
     int size = static_cast<int>(vec.size());
     std::vector<T> vecSq(size, 0.);
@@ -120,12 +120,13 @@ auto vecSq(std::vector<T> vec)
 
 // estimate error
 template <typename T1, typename T2>
-auto Variance(std::vector<T1> averages, T2 estimator)
+auto MCErrorEstimate(std::vector<T1> const &averages, T2 estimator)
 {
+    int N = static_cast<int>(averages.size());
     using R = decltype(averages[0] + estimator);
     // calculation
     auto add_square = [estimator](R sum, R i) {auto d = i - estimator; return sum + d * d; };
-    return std::accumulate(averages.begin(), averages.end(), 0.0, add_square) / static_cast<int>(averages.size());
+    return std::sqrt(std::accumulate(averages.begin(), averages.end(), 0., add_square) / sq(N));
 }
 
 // main function
@@ -235,7 +236,7 @@ int main(int argc, char **argv)
     // calulate thermodynamic averages
     double estimator_x = Mean(positionSampled), estimator_xSq = MeanSq(positionSampled);
     // estimate errors
-    double sigma_x = std::sqrt(Variance(positionSampled, estimator_x)), sigma_xSq = std::sqrt(Variance(vecSq(positionSampled), estimator_xSq));
+    double sigma_x = MCErrorEstimate(positionSampled, estimator_x), sigma_xSq = MCErrorEstimate(vecSq(positionSampled), estimator_xSq);
 
     // write results to screen
     std::cout << "E(x): " << estimator_x << " +/- " << sigma_x << std::endl;
